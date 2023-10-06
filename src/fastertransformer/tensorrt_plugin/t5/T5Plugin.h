@@ -126,6 +126,8 @@ private:
     T5Encoder<half>*                pT5EncoderHalf_        = nullptr;
     T5Encoder<float>*               pT5EncoderFloat_       = nullptr;
     struct {
+        bool t5_with_bias = false;
+        bool use_gated_activation = false;
         // constructor parameter
         size_t max_batch_size = 128;
         size_t max_seq_len    = 384;
@@ -146,7 +148,7 @@ private:
         bool                              is_free_buffer_after_forward = false;
         bool                              is_sparse                    = false;
         AttentionType                     attention_type               = AttentionType::UNFUSED_MHA;
-        fastertransformer::ActivationType activation_type              = fastertransformer::ActivationType::Relu;
+        fastertransformer::ActivationType activation_type              = fastertransformer::ActivationType::GeGLU;
         LayerNormType                     layernorm_type               = LayerNormType::pre_layernorm;
         // runtime parameter
         size_t batch_size     = 0;
@@ -244,6 +246,8 @@ private:
     T5Decoding<half>*               pT5DecodingHalf_        = nullptr;
     T5Decoding<float>*              pT5DecodingFloat_       = nullptr;
     struct {
+        bool t5_with_bias = false;
+        bool use_gated_activation = false;
         // constructor parameter
         size_t max_batch_size             = 128;
         size_t max_seq_len                = 384;
@@ -271,6 +275,8 @@ private:
         size_t mem_d_model                  = d_model;
         size_t mem_hidden_units             = d_model;
         bool   is_free_buffer_after_forward = false;
+        fastertransformer::ActivationType activation_type    = fastertransformer::ActivationType::GeGLU;
+        LayerNormType                     layernorm_type     = LayerNormType::post_layernorm;
         // runtime parameter
         size_t batch_size     = 128;
         size_t seq_len        = 384;

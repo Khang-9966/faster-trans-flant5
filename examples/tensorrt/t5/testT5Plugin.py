@@ -16,6 +16,7 @@
 
 import configparser
 import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import sys
 import ctypes
 import argparse
@@ -26,7 +27,7 @@ import torch
 from datetime import datetime
 
 from transformers import PreTrainedTokenizerFast
-from transformers import T5Tokenizer
+from transformers import T5Tokenizer, T5TokenizerFast
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/../../..")
@@ -200,11 +201,14 @@ def testBoth(arg, stream):
     #            engine.get_binding_dtype(i),engine.get_binding_shape(i),context.get_binding_shape(i),engine.get_binding_name(i))
 
     tokenizer = T5Tokenizer.from_pretrained(arg['model'])
-    fast_tokenizer = PreTrainedTokenizerFast.from_pretrained(arg['model'])
-
+#     fast_tokenizer = PreTrainedTokenizerFast.from_pretrained(arg['model'])
+    fast_tokenizer = T5TokenizerFast.from_pretrained(arg['model'])
+    
     with open(arg['source'], 'r') as f:
         src_text = recover_bpe(f.readlines())
-        src_text = ["translate English to German: " + line.strip() for line in src_text]
+#         src_text = ["translate English to German: " + line.strip() for line in src_text]
+        src_text = ["### Instruction: Tạo 5 câu hỏi và trả lời cho đoạn văn này.: Thay mặt Đảng, Nhà nước và nhân dân Việt Nam, tôi nhiệt liệt chào mừng Ngài Tổng thống Joe Biden, người đã dành tình cảm đặc biệt đối với đất nước, nhân dân Việt Nam và ở những cương vị khác nhau luôn dành nhiều sự ủng hộ quý báu cho việc phát triển quan hệ hữu nghị Việt Nam - Mỹ. Ngài đến thăm Việt Nam đúng vào dịp hai nước kỷ niệm 10 năm xác lập quan hệ Đối tác Toàn diện. ### Response:" for _ in range(len(src_text))]
+
 
     with open(arg['target'], 'r') as f:
         tgt_text = recover_bpe(f.readlines())
@@ -219,6 +223,7 @@ def testBoth(arg, stream):
     start_time = datetime.now()
     while prev < len(src_text):
         input_texts = src_text[prev:prev + nBatchSize]
+    
         prev += nBatchSize
 
         input_token = tokenizer(input_texts, return_tensors='pt', padding=True)
@@ -309,7 +314,7 @@ if __name__ == '__main__':
     parser.add_argument('-topp', '--sampling_topp', type=float, metavar='NUMBER', default=0.0, help='Probability (p) value of top p sampling in decoding. Default is 0.0. ')
     parser.add_argument('-d', '--data_type', type=str, metavar='STRING', default="fp32", help='data type (default: fp32)', choices=['fp32', 'fp16'])
     parser.add_argument('-lib_path', '--lib_path', type=str, metavar='STRING', default="lib/libtrt_t5.so", help='the path of FasterTransformer pytorch t5 op library.')
-    parser.add_argument('-model', '--model', type=str, metavar='STRING', default="t5-small", help='T5 model size.', choices=["t5-small", "t5-base", "t5-large", "t5-3b", "t5-11b"])
+    parser.add_argument('-model', '--model', type=str, metavar='STRING', default="t5-small", help='T5 model size.')
     parser.add_argument(            '--ckpt_path',      type=str, metavar='STRING', help='path to the checkpoint file.')
     parser.add_argument('-max_ite', '--max_iteration',  type=int,   metavar='NUMBER',   default=100000,     help='Maximum iteraiton for translation, default is 100000 (as large as possible to run all test set).')
     parser.add_argument('--ft_BLEU_threshold', type=float, help='Threshold of FT BLEU score')

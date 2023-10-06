@@ -42,9 +42,13 @@ T5EncoderPlugin::T5EncoderPlugin(const std::string& name,
     }
 
     bool t5_with_bias = reader.GetBoolean("structure", "t5_with_bias", false);
+    bool use_gated_activation = reader.GetBoolean("structure", "use_gated_activation", false);
+    m_.use_gated_activation = use_gated_activation;
+    m_.t5_with_bias = t5_with_bias;
     m_.max_batch_size = max_batch_size;
     m_.max_seq_len    = max_seq_len;
     m_.beam_width     = beam_width;
+    m_.vocab_size     = reader.GetInteger("encoder", "vocab_size");
     m_.head_num       = reader.GetInteger("encoder", "num_heads");
     m_.size_per_head  = reader.GetInteger("encoder", "d_kv");
     m_.inter_size     = reader.GetInteger("encoder", "d_ff");
@@ -81,7 +85,9 @@ T5EncoderPlugin::T5EncoderPlugin(const std::string& name,
                                                               1,  // tensor_para_size
                                                               0,  // tensor_para_rank
                                                               1,  // pipeline_para_size
-                                                              0   // pipeline_para_rank
+                                                              0,   // pipeline_para_rank
+                                                              m_.t5_with_bias,
+                                                              m_.use_gated_activation
             );
             pT5EncoderWeightHalf_->loadModel(std::string(m_.ckpt_path));
         }
@@ -98,7 +104,9 @@ T5EncoderPlugin::T5EncoderPlugin(const std::string& name,
                                                                 1,  // tensor_para_size
                                                                 0,  // tensor_para_rank
                                                                 1,  // pipeline_para_size
-                                                                0   // pipeline_para_rank
+                                                                0,   // pipeline_para_rank                                       
+                                                                m_.t5_with_bias,
+                                                                m_.use_gated_activation
             );
             pT5EncoderWeightFloat_->loadModel(std::string(m_.ckpt_path));
         }
@@ -243,7 +251,9 @@ T5EncoderPlugin::T5EncoderPlugin(const std::string& name, const void* buffer, si
                                                               1,  // tensor_para_size
                                                               0,  // tensor_para_rank
                                                               1,  // pipeline_para_size
-                                                              0   // pipeline_para_rank
+                                                              0,   // pipeline_para_rank
+                                                              m_.t5_with_bias,
+                                                              m_.use_gated_activation
             );
             pT5EncoderWeightHalf_->loadModel(std::string(m_.ckpt_path));
         }
@@ -260,7 +270,9 @@ T5EncoderPlugin::T5EncoderPlugin(const std::string& name, const void* buffer, si
                                                                 1,  // tensor_para_size
                                                                 0,  // tensor_para_rank
                                                                 1,  // pipeline_para_size
-                                                                0   // pipeline_para_rank
+                                                                0,   // pipeline_para_rank
+                                                                m_.t5_with_bias,
+                                                                m_.use_gated_activation 
             );
             pT5EncoderWeightFloat_->loadModel(std::string(m_.ckpt_path));
         }
@@ -724,10 +736,14 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name,
     }
 
     bool t5_with_bias   = reader.GetBoolean("structure", "t5_with_bias", false);
+    bool use_gated_activation = reader.GetBoolean("structure", "use_gated_activation", false);
+    m_.use_gated_activation = use_gated_activation;
+    m_.t5_with_bias = t5_with_bias;
     m_.max_batch_size   = max_batch_size;
     m_.max_seq_len      = max_seq_len;
     m_.mem_max_seq_len  = mem_max_seq_len;
     m_.beam_width       = beam_width;
+    m_.vocab_size       = reader.GetInteger("decoder", "vocab_size");
     m_.head_num         = reader.GetInteger("decoder", "num_heads");
     m_.size_per_head    = reader.GetInteger("decoder", "d_kv");
     m_.inter_size       = reader.GetInteger("decoder", "d_ff");
@@ -764,7 +780,9 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name,
                                                                 1,  // tensor_para_size
                                                                 0,  // tensor_para_rank
                                                                 1,  // pipeline_para_size
-                                                                0   // pipeline_para_rank
+                                                                0,   // pipeline_para_rank
+                                                                m_.t5_with_bias,
+                                                                m_.use_gated_activation
             );
             pT5DecodingWeightHalf_->loadModel(std::string(m_.ckpt_path));
         }
@@ -780,7 +798,9 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name,
                                                                   1,  // tensor_para_size,
                                                                   0,  // tensor_para_rank,
                                                                   1,  // pipeline_para_size,
-                                                                  0   // pipeline_para_rank
+                                                                  0,   // pipeline_para_rank
+                                                                  m_.t5_with_bias,
+                                                                  m_.use_gated_activation
             );
             pT5DecodingWeightFloat_->loadModel(std::string(m_.ckpt_path));
         }
@@ -865,7 +885,8 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name,
                                                 m_.is_free_buffer_after_forward,
                                                 &cuda_device_prop_,
                                                 NcclParam(0, 1),  // tensor_para
-                                                NcclParam(0, 1)   // pipeline_para
+                                                NcclParam(0, 1),   // pipeline_para
+                                                m_.activation_type
         );
     }
     else {
@@ -901,7 +922,8 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name,
                                                   m_.is_free_buffer_after_forward,
                                                   &cuda_device_prop_,
                                                   NcclParam(0, 1),  // tensor_para
-                                                  NcclParam(0, 1)   // pipeline_para
+                                                  NcclParam(0, 1),   // pipeline_para
+                                                  m_.activation_type
         );
     }
 }
@@ -929,7 +951,9 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name, const void* buffer, 
                                                                 1,  // tensor_para_size
                                                                 0,  // tensor_para_rank
                                                                 1,  // pipeline_para_size
-                                                                0   // pipeline_para_rank
+                                                                0,   // pipeline_para_rank
+                                                                m_.t5_with_bias,
+                                                                m_.use_gated_activation
             );
             pT5DecodingWeightHalf_->loadModel(std::string(m_.ckpt_path));
         }
@@ -945,7 +969,9 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name, const void* buffer, 
                                                                   1,  // tensor_para_size,
                                                                   0,  // tensor_para_rank,
                                                                   1,  // pipeline_para_size,
-                                                                  0   // pipeline_para_rank
+                                                                  0,   // pipeline_para_rank
+                                                                  m_.t5_with_bias,
+                                                                  m_.use_gated_activation
             );
             pT5DecodingWeightFloat_->loadModel(std::string(m_.ckpt_path));
         }
@@ -1032,7 +1058,8 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name, const void* buffer, 
                                                 m_.is_free_buffer_after_forward,
                                                 &cuda_device_prop_,
                                                 NcclParam(0, 1),  // tensor_para
-                                                NcclParam(0, 1)   // pipeline_para
+                                                NcclParam(0, 1),   // pipeline_para
+                                                m_.activation_type
         );
     }
     else {
@@ -1068,7 +1095,8 @@ T5DecodingPlugin::T5DecodingPlugin(const std::string& name, const void* buffer, 
                                                   m_.is_free_buffer_after_forward,
                                                   &cuda_device_prop_,
                                                   NcclParam(0, 1),  // tensor_para
-                                                  NcclParam(0, 1)   // pipeline_para
+                                                  NcclParam(0, 1),   // pipeline_para
+                                                  m_.activation_type
         );
     }
 }
